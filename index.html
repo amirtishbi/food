@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מה מביא כל אחד? 📋</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff8ef;--card:#fff;--ink:#2b2420;--mut:#8a7d72;--acc:#e8692c;--acc2:#2f9e6e;--line:#f0e4d6;--warn:#fff4e0}
+*{box-sizing:border-box}
+body{margin:0;font-family:Rubik,system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:16px 14px 110px}
+.wrap{max-width:620px;margin:0 auto}
+h1{font-size:26px;margin:6px 0 2px}
+.sub{color:var(--mut);margin:0 0 14px;font-size:14px}
+.stats{display:flex;gap:8px;margin-bottom:12px}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:12px;color:var(--mut)}
+.bar{height:8px;background:var(--line);border-radius:9px;overflow:hidden;margin-bottom:16px}
+.bar i{display:block;height:100%;background:var(--acc2);width:0;transition:.3s}
+input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;min-width:0}
+#q{width:100%;margin-bottom:14px}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:6px}
+.item.done{opacity:.55}
+.item.done .what{text-decoration:line-through}
+.item.open{background:var(--warn);border-color:#f3d79a}
+.item .txt{flex:1;min-width:0;cursor:pointer}
+.who{font-weight:700}
+.what{color:#5a4e45;font-size:14px}
+.chk{width:22px;height:22px;accent-color:var(--acc2);flex:none}
+.ph{width:22px;flex:none}
+.ib{background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--mut)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:18px 0}
+.box h3{margin:0 0 10px;font-size:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row input{flex:1 1 140px}
+.btn{font:inherit;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:500}
+.p{background:var(--acc);color:#fff}
+.g{background:#25d366;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.s{background:var(--line);color:var(--ink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:14px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;user-select:none}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.hint{font-size:12px;color:var(--mut);margin:6px 0 0}
+.dock{position:fixed;bottom:0;left:0;right:0;background:rgba(255,248,239,.95);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+.dock .in{max-width:620px;margin:0 auto;display:flex;gap:8px}
+.dock .btn{flex:1}
+pre{white-space:pre-wrap;font-family:inherit;background:#fbf4ea;border-radius:12px;padding:12px;font-size:14px;margin:0 0 10px;max-height:260px;overflow:auto}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:30px;transition:.3s;z-index:9}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;z-index:8}
+.modal.on{display:flex}
+.sheet{background:#fff;width:100%;max-width:620px;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
+.sheet label{display:block;font-size:13px;color:var(--mut);margin:12px 0 6px}
+.sheet input{width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>מה מביא כל אחד?</h1>
+  <p class="sub">סמנו ✓ כשמשהו הגיע · לחצו על שורה כדי לערוך או לצרף אנשים</p>
+
+  <div class="stats">
+    <div class="stat"><b id="sTotal">0</b><span>משתתפים</span></div>
+    <div class="stat"><b id="sDone">0</b><span>הגיעו</span></div>
+    <div class="stat"><b id="sOpen">0</b><span>עוד לא נקבע</span></div>
+  </div>
+  <div class="bar"><i id="prog"></i></div>
+
+  <input id="q" placeholder="חיפוש שם או מאכל">
+
+  <div id="list"></div>
+
+  <div class="box">
+    <h3>הוספה</h3>
+    <div class="row">
+      <input id="nName" placeholder="שם (אפשר כמה, מופרדים בפסיק)">
+      <input id="nWhat" placeholder="מה מביאים">
+      <button class="btn p" id="addBtn">הוסף</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>תצוגה מקדימה להודעה</h3>
+    <pre id="preview"></pre>
+    <button class="btn s" id="resetBtn">↺ איפוס לרשימה המקורית</button>
+  </div>
+</div>
+
+<div class="dock"><div class="in">
+  <button class="btn p" id="copyBtn">העתק הודעה</button>
+  <a class="btn g" id="waBtn" href="#" target="_blank" rel="noopener">שלח בוואטסאפ</a>
+</div></div>
+
+<div class="modal" id="modal"><div class="sheet">
+  <h3 style="margin:0">עריכה</h3>
+  <label>מה מביאים</label>
+  <input id="eWhat" placeholder="השאירו ריק אם עוד לא נקבע">
+  <label>מי מביא? (אפשר לבחור כמה)</label>
+  <div class="chips" id="eWho"></div>
+  <p class="hint">מי שתבחרו יועבר לשורה הזאת</p>
+  <div class="row" style="margin-top:8px">
+    <input id="eNew" placeholder="שם חדש">
+    <button class="btn s" id="eAdd">+ הוסף שם</button>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <button class="btn p" id="eSave" style="flex:1">שמור</button>
+    <button class="btn s" id="eDel">מחק שורה</button>
+    <button class="btn s" id="eCancel">ביטול</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT=[
+ {p:['אמיר'],w:'גבינה צהובה'},
+ {p:['יאיר שפירא'],w:'סלט ביצים/טונה'},
+ {p:['ענת שיקום'],w:'גבינה מפנקת אחרת'},
+ {p:['זוהר שיקום רמת גן'],w:'לחם חביב'},
+ {p:['נעם מידני'],w:'מיץ כלשהו'},
+ {p:['ורה'],w:'הפתעה משתנה'},
+ {p:['ליאת לשבינסקי שיקום'],w:'מתוק לנשמה'},
+ {p:['אביה 1'],w:'צלחות וכפיות חד-פעמיות'},
+ {p:['אביה 2'],w:'סלט למריחה כלשהו'},
+ {p:['רוני'],w:'סלט למריחה כלשהו'},
+ {p:['יובל'],w:'באגטים או לחם כלשהו'},
+ {p:['יפעת'],w:''},
+ {p:['אורינה'],w:''}
+];
+const KEY='food-list-v3';
+let items, editIdx=null, sel=new Set(), extra=[];
+const $=id=>document.getElementById(id);
+const clone=o=>JSON.parse(JSON.stringify(o));
+function load(){try{const s=localStorage.getItem(KEY);if(s){items=JSON.parse(s);return}}catch(e){}items=clone(DEFAULT)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const isOpen=it=>!it.w.trim();
+const names=it=>it.p.join(' + ');
+const heJoin=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' ו'+a[a.length-1];
+const allPeople=()=>items.flatMap(i=>i.p);
+
+function render(){
+ const q=$('q').value.trim();
+ // assigned first, then open
+ const order=items.map((it,i)=>({it,i})).sort((a,b)=>isOpen(a.it)-isOpen(b.it));
+ let html='';
+ order.forEach(({it,i})=>{
+  if(q&&!(names(it)+' '+it.w).includes(q))return;
+  const open=isOpen(it);
+  html+=`<div class="item ${it.d?'done':''} ${open?'open':''}">
+   ${open?'<span class="ph"></span>':`<input type="checkbox" class="chk" data-i="${i}" ${it.d?'checked':''}>`}
+   <div class="txt" data-e="${i}"><div class="who">${esc(names(it))}</div><div class="what">${open?'עוד לא נקבע':esc(it.w)}</div></div>
+   <button class="ib" data-e="${i}" aria-label="עריכה">✏️</button></div>`;
+ });
+ $('list').innerHTML=html||'<p class="sub">לא נמצא כלום</p>';
+ document.querySelectorAll('.chk').forEach(c=>c.onchange=()=>{items[c.dataset.i].d=c.checked;save();render()});
+ document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>openEdit(+b.dataset.e));
+
+ const assigned=items.filter(i=>!isOpen(i));
+ $('sTotal').textContent=allPeople().length;
+ $('sDone').textContent=assigned.filter(i=>i.d).length;
+ $('sOpen').textContent=items.filter(isOpen).reduce((s,i)=>s+i.p.length,0);
+ $('prog').style.width=(assigned.length?assigned.filter(i=>i.d).length/assigned.length*100:0)+'%';
+ buildMsg();
+}
+
+function buildMsg(){
+ let t='*מה מביא כל אחד?*\n\n';
+ items.filter(i=>!isOpen(i)).forEach(i=>t+=`*${heJoin(i.p)}*: ${i.w}\n`);
+ const open=items.filter(isOpen);
+ if(open.length)t+=`\nעוד לא נקבע: ${open.flatMap(o=>o.p).join(', ')}\n`;
+ t+='\nאם פספסתי מישהו או משהו, אז וואלה קורה';
+ $('preview').innerHTML=esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/_([^_\n]+)_/g,'<i>$1</i>');
+ $('waBtn').href='https://wa.me/?text='+encodeURIComponent(t);
+ return t;
+}
+
+function drawChips(){
+ const list=[...new Set([...allPeople(),...extra])];
+ $('eWho').innerHTML=list.map(n=>`<span class="chip ${sel.has(n)?'on':''}" data-n="${esc(n)}">${esc(n)}</span>`).join('');
+ document.querySelectorAll('#eWho .chip').forEach(c=>c.onclick=()=>{const n=c.dataset.n;sel.has(n)?sel.delete(n):sel.add(n);drawChips()});
+}
+function openEdit(i){
+ editIdx=i;const it=items[i];
+ $('eWhat').value=it.w;sel=new Set(it.p);extra=[];$('eNew').value='';drawChips();
+ $('modal').classList.add('on');
+}
+function closeEdit(){$('modal').classList.remove('on');editIdx=null}
+$('eAdd').onclick=()=>{const n=$('eNew').value.trim();if(!n)return;extra.push(n);sel.add(n);$('eNew').value='';drawChips()};
+$('eSave').onclick=()=>{
+ if(!sel.size){toast('צריך לבחור לפחות שם אחד');return}
+ const it=items[editIdx];
+ it.w=$('eWhat').value.trim();
+ const chosen=[...sel];
+ // remove chosen people from other rows
+ items.forEach((o,k)=>{if(k!==editIdx)o.p=o.p.filter(n=>!sel.has(n))});
+ // people removed from this row go back as "not decided"
+ const dropped=it.p.filter(n=>!sel.has(n));
+ it.p=chosen;
+ dropped.forEach(n=>items.push({p:[n],w:''}));
+ items=items.filter(o=>o.p.length);
+ save();closeEdit();render();
+};
+$('eDel').onclick=()=>{items.splice(editIdx,1);save();closeEdit();render();toast('השורה נמחקה')};
+$('eCancel').onclick=closeEdit;
+$('modal').onclick=e=>{if(e.target.id==='modal')closeEdit()};
+
+$('addBtn').onclick=()=>{
+ const ps=$('nName').value.split(/[,،+]/).map(s=>s.trim()).filter(Boolean);
+ if(!ps.length){toast('צריך שם');return}
+ items.forEach(o=>o.p=o.p.filter(n=>!ps.includes(n)));
+ items=items.filter(o=>o.p.length);
+ items.push({p:ps,w:$('nWhat').value.trim()});
+ $('nName').value=$('nWhat').value='';save();render();toast('נוסף ✓');
+};
+$('q').oninput=render;
+$('resetBtn').onclick=()=>{
+ const b=$('resetBtn');
+ if(b.dataset.c){items=clone(DEFAULT);save();render();toast('אופס לרשימה המקורית');delete b.dataset.c;b.textContent='↺ איפוס לרשימה המקורית'}
+ else{b.dataset.c=1;b.textContent='לחצו שוב לאישור';setTimeout(()=>{delete b.dataset.c;b.textContent='↺ איפוס לרשימה המקורית'},3000)}
+};
+$('copyBtn').onclick=async()=>{
+ const t=buildMsg();
+ try{await navigator.clipboard.writeText(t);toast('הועתק ✓ הדביקו בוואטסאפ')}
+ catch(e){const r=document.createRange();r.selectNodeContents($('preview'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('סומן – לחצו העתק')}
+};
+let tt;function toast(m){$('toast').textContent=m;$('toast').classList.add('on');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('on'),2200)}
+
+load();render();
+</script>
+</body>
+</html>
