@@ -167,7 +167,7 @@ function render(){
 
 function buildMsg(){
  let t='*מה מביא כל אחד?*\n\n';
- items.filter(i=>!isOpen(i)).forEach(i=>t+=`*${heJoin(i.p)}*: ${i.w}\n`);
+ items.filter(i=>!isOpen(i)).forEach(i=>t+=`- *${heJoin(i.p)}*: ${i.w}\n`);
  const open=items.filter(isOpen);
  if(open.length)t+=`\nעוד לא נקבע: ${open.flatMap(o=>o.p).join(', ')}\n`;
  t+='\nאם פספסתי מישהו או משהו, אז וואלה קורה';
