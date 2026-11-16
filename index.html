@@ -74,7 +74,7 @@ pre{white-space:pre-wrap;font-family:inherit;background:#fbf4ea;border-radius:12
   <div class="box">
     <h3>הוספה</h3>
     <div class="row">
-      <input id="nName" placeholder="שם (אפשר כמה, מופרדים בפסיק)">
+      <input id="nName" placeholder="שם (כמה – עם פסיק, ריק = דרוש מתנדב)">
       <input id="nWhat" placeholder="מה מביאים">
       <button class="btn p" id="addBtn">הוסף</button>
     </div>
@@ -120,15 +120,16 @@ const DEFAULT=[
  {p:['זוהר שיקום רמת גן'],w:'לחם חביב'},
  {p:['נעם מידני'],w:'מיץ כלשהו'},
  {p:['ורה'],w:'הפתעה משתנה'},
- {p:['ליאת לשבינסקי שיקום'],w:'מתוק לנשמה'},
- {p:['אביה 1'],w:'צלחות וכפיות חד-פעמיות'},
+ {p:['ליאת לשבינסקי שיקום'],w:'גבינות'},
+ {p:['אביה ג'],w:'צלחות וכפיות חד-פעמיות'},
  {p:['אביה 2'],w:'סלט למריחה כלשהו'},
  {p:['רוני'],w:'סלט למריחה כלשהו'},
- {p:['יובל'],w:'באגטים או לחם כלשהו'},
- {p:['יפעת'],w:''},
- {p:['אורינה'],w:''}
+ {p:['יובל'],w:'פריכיות או משהו במקום לחם'},
+ {p:['יפעת'],w:'ממרח כלשהו'},
+ {p:['אורינה'],w:'אבוקדו'},
+ {p:[],w:'סלט ירקות'}
 ];
-const KEY='food-list-v3';
+const KEY='food-list-v4';
 let items, editIdx=null, sel=new Set(), extra=[];
 const $=id=>document.getElementById(id);
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -136,28 +137,30 @@ function load(){try{const s=localStorage.getItem(KEY);if(s){items=JSON.parse(s);
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
 function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const isOpen=it=>!it.w.trim();
-const names=it=>it.p.join(' + ');
+const needVol=it=>!isOpen(it)&&!it.p.length;
+const rank=it=>isOpen(it)?2:needVol(it)?1:0;
+const names=it=>it.p.length?it.p.join(' + '):'דרוש/ה מתנדב/ת';
 const heJoin=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' ו'+a[a.length-1];
 const allPeople=()=>items.flatMap(i=>i.p);
 
 function render(){
  const q=$('q').value.trim();
  // assigned first, then open
- const order=items.map((it,i)=>({it,i})).sort((a,b)=>isOpen(a.it)-isOpen(b.it));
+ const order=items.map((it,i)=>({it,i})).sort((a,b)=>rank(a.it)-rank(b.it));
  let html='';
  order.forEach(({it,i})=>{
   if(q&&!(names(it)+' '+it.w).includes(q))return;
-  const open=isOpen(it);
+  const open=isOpen(it)||needVol(it);
   html+=`<div class="item ${it.d?'done':''} ${open?'open':''}">
    ${open?'<span class="ph"></span>':`<input type="checkbox" class="chk" data-i="${i}" ${it.d?'checked':''}>`}
-   <div class="txt" data-e="${i}"><div class="who">${esc(names(it))}</div><div class="what">${open?'עוד לא נקבע':esc(it.w)}</div></div>
+   <div class="txt" data-e="${i}"><div class="who">${esc(names(it))}</div><div class="what">${isOpen(it)?'עוד לא נקבע':esc(it.w)+(needVol(it)?' · לחצו לשיבוץ':'')}</div></div>
    <button class="ib" data-e="${i}" aria-label="עריכה">✏️</button></div>`;
  });
  $('list').innerHTML=html||'<p class="sub">לא נמצא כלום</p>';
  document.querySelectorAll('.chk').forEach(c=>c.onchange=()=>{items[c.dataset.i].d=c.checked;save();render()});
  document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>openEdit(+b.dataset.e));
 
- const assigned=items.filter(i=>!isOpen(i));
+ const assigned=items.filter(i=>rank(i)===0);
  $('sTotal').textContent=allPeople().length;
  $('sDone').textContent=assigned.filter(i=>i.d).length;
  $('sOpen').textContent=items.filter(isOpen).reduce((s,i)=>s+i.p.length,0);
@@ -167,7 +170,9 @@ function render(){
 
 function buildMsg(){
  let t='*מה מביא כל אחד?*\n\n';
- items.filter(i=>!isOpen(i)).forEach(i=>t+=`- *${heJoin(i.p)}*: ${i.w}\n`);
+ items.filter(i=>rank(i)===0).forEach(i=>t+=`- *${heJoin(i.p)}*: ${i.w}\n`);
+ const vol=items.filter(needVol);
+ if(vol.length)t+=`\n*מחפשים מתנדב/ת:* ${vol.map(v=>v.w).join(', ')}\n`;
  const open=items.filter(isOpen);
  if(open.length)t+=`\nעוד לא נקבע: ${open.flatMap(o=>o.p).join(', ')}\n`;
  t+='\nאם פספסתי מישהו או משהו, אז וואלה קורה';
@@ -189,9 +194,10 @@ function openEdit(i){
 function closeEdit(){$('modal').classList.remove('on');editIdx=null}
 $('eAdd').onclick=()=>{const n=$('eNew').value.trim();if(!n)return;extra.push(n);sel.add(n);$('eNew').value='';drawChips()};
 $('eSave').onclick=()=>{
- if(!sel.size){toast('צריך לבחור לפחות שם אחד');return}
  const it=items[editIdx];
- it.w=$('eWhat').value.trim();
+ const nw=$('eWhat').value.trim();
+ if(!sel.size&&!nw){toast('צריך שם או מה מביאים');return}
+ it.w=nw;
  const chosen=[...sel];
  // remove chosen people from other rows
  items.forEach((o,k)=>{if(k!==editIdx)o.p=o.p.filter(n=>!sel.has(n))});
@@ -199,7 +205,7 @@ $('eSave').onclick=()=>{
  const dropped=it.p.filter(n=>!sel.has(n));
  it.p=chosen;
  dropped.forEach(n=>items.push({p:[n],w:''}));
- items=items.filter(o=>o.p.length);
+ items=items.filter(o=>o.p.length||o.w.trim());
  save();closeEdit();render();
 };
 $('eDel').onclick=()=>{items.splice(editIdx,1);save();closeEdit();render();toast('השורה נמחקה')};
@@ -208,9 +214,9 @@ $('modal').onclick=e=>{if(e.target.id==='modal')closeEdit()};
 
 $('addBtn').onclick=()=>{
  const ps=$('nName').value.split(/[,،+]/).map(s=>s.trim()).filter(Boolean);
- if(!ps.length){toast('צריך שם');return}
+ if(!ps.length&&!$('nWhat').value.trim()){toast('צריך שם או מה מביאים');return}
  items.forEach(o=>o.p=o.p.filter(n=>!ps.includes(n)));
- items=items.filter(o=>o.p.length);
+ items=items.filter(o=>o.p.length||o.w.trim());
  items.push({p:ps,w:$('nWhat').value.trim()});
  $('nName').value=$('nWhat').value='';save();render();toast('נוסף ✓');
 };
