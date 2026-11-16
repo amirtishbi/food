@@ -138,7 +138,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
 function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const isOpen=it=>!it.w.trim();
 const needVol=it=>!isOpen(it)&&!it.p.length;
-const rank=it=>isOpen(it)?2:needVol(it)?1:0;
+const rank=it=>isOpen(it)?2:needVol(it)?-1:0;
 const names=it=>it.p.length?it.p.join(' + '):'דרוש/ה מתנדב/ת';
 const heJoin=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' ו'+a[a.length-1];
 const allPeople=()=>items.flatMap(i=>i.p);
@@ -170,11 +170,12 @@ function render(){
 
 function buildMsg(){
  let t='*מה מביא כל אחד?*\n\n';
- items.filter(i=>rank(i)===0).forEach(i=>t+=`- *${heJoin(i.p)}*: ${i.w}\n`);
  const vol=items.filter(needVol);
- if(vol.length)t+=`\n*מחפשים מתנדב/ת:* ${vol.map(v=>v.w).join(', ')}\n`;
+ if(vol.length)t+=`*מחפשים מתנדב/ת: ${vol.map(v=>v.w).join(', ')}*\nמי מוכן/ה לקחת על עצמו?\n\n`;
+ items.filter(i=>rank(i)===0).forEach(i=>t+=`- *${heJoin(i.p)}*: ${i.w}\n`);
  const open=items.filter(isOpen);
  if(open.length)t+=`\nעוד לא נקבע: ${open.flatMap(o=>o.p).join(', ')}\n`;
+ t+='\nמישהו לא מגיע לישיבה? עדכנו בבקשה\n';
  t+='\nאם פספסתי מישהו או משהו, אז וואלה קורה';
  $('preview').innerHTML=esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/_([^_\n]+)_/g,'<i>$1</i>');
  $('waBtn').href='https://wa.me/?text='+encodeURIComponent(t);
